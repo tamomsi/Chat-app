@@ -1,20 +1,37 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+// Importing the 'Start' and 'Chat' components from their respective files
+import Start from './components/start';
+import Chat from './components/chat';
 
-export default function App() {
+// Importing necessary components from the React Navigation library
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+// Creating a native stack navigator using 'createNativeStackNavigator'
+const Stack = createNativeStackNavigator();
+
+// App component
+const App = () => {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    // Wrapping the app with 'NavigationContainer' to enable navigation
+    <NavigationContainer>
+      {/* Setting up the stack navigator */}
+      <Stack.Navigator
+        initialRouteName="Start" // Setting the initial route name to 'Start'
+      >
+        {/* Defining the 'Start' screen */}
+        <Stack.Screen
+          name="Start" // Setting the screen name to 'Start'
+          component={Start} // Rendering the 'Start' component for this screen
+        />
+
+        {/* Defining the 'Chat' screen */}
+        <Stack.Screen
+          name="Chat" // Setting the screen name to 'Chat'
+          component={Chat} // Rendering the 'Chat' component for this screen
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default App; // Exporting the App component as the default export
