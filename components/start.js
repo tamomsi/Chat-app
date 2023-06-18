@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, TextInput, ImageBackground } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, TextInput, ImageBackground, KeyboardAvoidingView, Platform } from 'react-native';
 
 const Start = ({ navigation }) => {
   const [name, setName] = useState('');
@@ -12,6 +12,16 @@ const Start = ({ navigation }) => {
     { name: 'Gray', color: '#8A95A5' },
     { name: 'Green', color: '#B9C6AE' },
   ];
+
+  useEffect(() => {
+    navigation.setOptions({
+      onPress: handlePress,
+    });
+  }, []);
+
+  const handlePress = () => {
+    // Handle the onPress event here
+  };
 
   return (
     <ImageBackground
@@ -47,11 +57,17 @@ const Start = ({ navigation }) => {
           <TouchableOpacity
             style={styles.button}
             onPress={() => navigation.navigate('Chat', { name, backgroundColor })}
+            accessible={true}
+            accessibilityLabel="More options"
+            accessibilityHint="Lets you choose to send an image or your geolocation."
+            accessibilityRole="button"
           >
             <Text style={styles.buttonText}>Go to Chat</Text>
           </TouchableOpacity>
         </View>
       </View>
+      {/* Keyboard behavior for ios */}
+      {Platform.OS === 'ios' ? <KeyboardAvoidingView behavior="padding" /> : null}
     </ImageBackground>
   );
 }
