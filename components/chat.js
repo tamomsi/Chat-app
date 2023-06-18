@@ -11,6 +11,7 @@ const Chat = ({ route, navigation }) => {
   // useEffect hook to set the navigation options when the component mounts
   useEffect(() => {
     navigation.setOptions({ title: name });
+    // Setting initial messages
     setMessages([
       {
         _id: 1,
@@ -28,15 +29,17 @@ const Chat = ({ route, navigation }) => {
         createdAt: new Date(),
         system: true,
       },
-    ]); // Setting the title of the screen to the 'name' parameter
+    ]);
   }, []);
 
+  // Function to handle sending new messages
   const onSend = (newMessages) => {
     setMessages((previousMessages) =>
       GiftedChat.append(previousMessages, newMessages)
     );
   };
 
+  // Custom bubble styles
   const renderBubble = (props) => {
     return <Bubble
       {...props}
@@ -48,25 +51,28 @@ const Chat = ({ route, navigation }) => {
           backgroundColor: "#FFF"
         }
       }}
-    />
-  }
+    />;
+  };
 
   return (
     <View style={[styles.container, { backgroundColor }]}>
-    <GiftedChat
-      messages={messages}
-      renderBubble={renderBubble}
-      onSend={(messages) => onSend(messages)}
-      user={{
-        _id: 1,
-        name
-      }}
-    />
-    {Platform.OS==='android' ? <KeyboardAvoidingView
-    behavior="height" /> : null}
+      {/* GiftedChat component */}
+      <GiftedChat
+        messages={messages} // Feed the GiftedChat component messages from the messages state
+        renderBubble={renderBubble} // Apply custom styles to the chat bubbles
+        onSend={(messages) => onSend(messages)} // Handle sending new messages
+        user={{
+          _id: 1,
+          name
+        }} // Set the user information
+      />
+      {/* Keyboard behavior for Android */}
+      {Platform.OS === 'android' ? (
+        <KeyboardAvoidingView behavior="height" />
+      ) : null}
     </View>
-  )
-}
+  );
+};
 
 // Styles for the Chat component
 const styles = StyleSheet.create({
