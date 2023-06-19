@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Platform, KeyboardAvoidingView } from 'react-native';
-import { Bubble, GiftedChat } from 'react-native-gifted-chat';
+import { Bubble, GiftedChat, InputToolbar } from 'react-native-gifted-chat';
 import { collection, query, orderBy, onSnapshot, addDoc } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const Chat = ({ route, navigation, db }) => {
+const Chat = ({ route, navigation, db, isConnected }) => {
   const { id, name, backgroundColor } = route.params;
   const [messages, setMessages] = useState([]);
 
@@ -12,32 +13,34 @@ const Chat = ({ route, navigation, db }) => {
     navigation.setOptions({ title: name });
 
     // Create a Firestore query to fetch messages ordered by createdAt in descending order
-    const unsubscribe = onSnapshot(
-      query(collection(db, 'messages'), orderBy('createdAt', 'desc')),
-      (snapshot) => {
-        // Map the fetched documents to a new array of messages
-        const newMessages = snapshot.docs.map((doc) => {
-          const messageData = doc.data();
-          return {
-            _id: doc.id,
-            text: messageData.text,
-            createdAt: new Date(messageData.createdAt.toMillis()),
-            user: {
-              _id: messageData.user._id,
-              name: messageData.user.name,
-            },
-          };
-        });
-        // Update the messages state with the new array of messages
-        setMessages(newMessages);
-      }
-    );
+    if (isConnected) {
+      const unsubscribe = onSnapshot(
+        query(collection(db, 'messages'), orderBy('createdAt', 'desc')),
+        (snapshot) => {
+          const newMessages = snapshot.docs.map((doc) => {
+            const messageData = doc.data();
+            return {
+              _id: doc.id,
+              text: messageData.text,
+              createdAt: new Date(messageData.createdAt.toMillis()),
+              user: {
+                _id: messageData.user._id,
+                name: messageData.user.name,
+              },
+            };
+          });
+          setMessages(newMessages);
+          cacheMessages(newMessages); // Cache the messages when fetched
+        }
+      );
 
-    // Clean up the Firestore listener when the component unmounts
-    return () => {
-      unsubscribe();
-    };
-  }, []);
+      return () => {
+        unsubscribe();
+      };
+    } else {
+      loadCachedMessages();
+    }
+  }, [isConnected]);
 
   const onSend = (newMessages) => {
     const message = newMessages[0];
@@ -51,6 +54,25 @@ const Chat = ({ route, navigation, db }) => {
         name: name,
       },
     });
+  };
+
+  const cacheMessages = async (messages) => {
+    try {
+      await AsyncStorage.setItem('cachedMessages', JSON.stringify(messages));
+    } catch (error) {
+      console.log('Error caching messages:', error);
+    }
+  };
+
+  const loadCachedMessages = async () => {
+    try {
+      const cachedMessages = await AsyncStorage.getItem('cachedMessages');
+      if (cachedMessages) {
+        setMessages(JSON.parse(cachedMessages));
+      }
+    } catch (error) {
+      console.log('Error loading cached messages:', error);
+    }
   };
 
   const renderBubble = (props) => {
@@ -69,19 +91,26 @@ const Chat = ({ route, navigation, db }) => {
     );
   };
 
+  const renderInputToolbar = (props) => {
+    if (isConnected) {
+      return <InputToolbar {...props} />;
+    } else {
+      return null;
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor }]}>
-      {/* Render the GiftedChat component */}
       <GiftedChat
         messages={messages}
         renderBubble={renderBubble}
-        onSend={(messages) => onSend(messages)}
+        renderInputToolbar={renderInputToolbar} // Override renderInputToolbar prop
+        onSend={onSend}
         user={{
           _id: id,
           name: name,
         }}
       />
-      {/* Platform-specific keyboard behavior */}
       {Platform.OS === 'android' ? <KeyboardAvoidingView behavior="height" /> : null}
     </View>
   );
