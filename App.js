@@ -1,9 +1,10 @@
 // Importing the 'Start' and 'Chat' components from their respective files
 import React from 'react';
+import { useNetInfo } from '@react-native-community/netinfo';
 import Start from './components/start';
 import Chat from './components/chat';
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, disableNetwork, enableNetwork  } from "firebase/firestore";
 
 // Importing necessary components from the React Navigation library
 import { NavigationContainer } from '@react-navigation/native';
@@ -29,12 +30,22 @@ const app = initializeApp(firebaseConfig);
 // Initialize Cloud Firestore and get a reference to the service
 const db = getFirestore(app);
 
+const netInfo = useNetInfo();
+const isConnected = netInfo.isConnected;
+
+  // Disable Firestore when there's no connection and enable it otherwise
+  if (isConnected) {
+    enableNetwork(db);
+  } else {
+    disableNetwork(db);
+  }
+
 return (
   <NavigationContainer>
     <Stack.Navigator initialRouteName="Start">
       <Stack.Screen name="Start" component={Start} />
       <Stack.Screen name="Chat">
-        {props => <Chat db={db} {...props} />}
+        {props => <Chat db={db} isConnected={isConnected} {...props} />}
       </Stack.Screen> 
     </Stack.Navigator>
   </NavigationContainer>
