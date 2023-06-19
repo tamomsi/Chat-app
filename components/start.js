@@ -1,11 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, TextInput, ImageBackground, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState } from 'react';
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  Alert
+} from 'react-native';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 
 const Start = ({ navigation }) => {
   const [name, setName] = useState('');
   const [backgroundColor, setBackgroundColor] = useState('');
 
-  // Define the color options
+  // Color options for background
   const colorOptions = [
     { name: 'Black', color: '#090C08' },
     { name: 'Purple', color: '#474056' },
@@ -13,14 +24,23 @@ const Start = ({ navigation }) => {
     { name: 'Green', color: '#B9C6AE' },
   ];
 
-  useEffect(() => {
-    navigation.setOptions({
-      onPress: handlePress,
-    });
-  }, []);
+  // Function to sign in the user anonymously
+  const signInUser = async () => {
+    try {
+      const auth = getAuth();
+      const { user } = await signInAnonymously(auth);
+      if (user) {
+        // Navigate to the Chat screen with user information
+        navigation.navigate('Chat', { id: user.uid, name, backgroundColor });
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to log in anonymously. Please try again.');
+    }
+  };
 
+  // Event handler for the "Start Chatting" button
   const handlePress = () => {
-    // Handle the onPress event here
+    signInUser();
   };
 
   return (
@@ -31,7 +51,6 @@ const Start = ({ navigation }) => {
       <View style={styles.container}>
         {/* App title */}
         <Text style={styles.title}>ChatSpace</Text>
-        
         <View style={styles.contentContainer}>
           {/* Username input */}
           <TextInput
@@ -40,8 +59,7 @@ const Start = ({ navigation }) => {
             onChangeText={setName}
             placeholder='Type your username here'
           />
-
-          {/* Render color options */}
+          {/* Color options for background */}
           <Text style={styles.colorOptionsText}>Choose Background Color</Text>
           <View style={styles.colorOptions}>
             {colorOptions.map((option) => (
@@ -53,24 +71,24 @@ const Start = ({ navigation }) => {
             ))}
           </View>
 
-          {/* Go to Chat button */}
+          {/* Start Chatting button */}
           <TouchableOpacity
             style={styles.button}
-            onPress={() => navigation.navigate('Chat', { name, backgroundColor })}
+            onPress={handlePress}
             accessible={true}
             accessibilityLabel="More options"
             accessibilityHint="Lets you choose to send an image or your geolocation."
             accessibilityRole="button"
           >
-            <Text style={styles.buttonText}>Go to Chat</Text>
+            <Text style={styles.buttonText}>Start Chatting</Text>
           </TouchableOpacity>
         </View>
       </View>
-      {/* Keyboard behavior for ios */}
+      {/* Keyboard behavior for iOS */}
       {Platform.OS === 'ios' ? <KeyboardAvoidingView behavior="padding" /> : null}
     </ImageBackground>
   );
-}
+};
 
 const styles = StyleSheet.create({
   backgroundImage: {

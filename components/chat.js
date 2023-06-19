@@ -1,84 +1,96 @@
-// Importing the necessary components from React and React Native libraries
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Platform, KeyboardAvoidingView } from 'react-native';
 import { Bubble, GiftedChat } from 'react-native-gifted-chat';
+import { collection, query, orderBy, onSnapshot, addDoc } from 'firebase/firestore';
 
-// Chat component
-const Chat = ({ route, navigation }) => {
-  const { name, backgroundColor } = route.params; // Extracting the 'name' and 'backgroundolor' parameters from the route
+const Chat = ({ route, navigation, db }) => {
+  const { id, name, backgroundColor } = route.params;
   const [messages, setMessages] = useState([]);
 
-  // useEffect hook to set the navigation options when the component mounts
   useEffect(() => {
+    // Set the navigation options to display the chat user's name as the title
     navigation.setOptions({ title: name });
-    // Setting initial messages
-    setMessages([
-      {
-        _id: 1,
-        text: 'Hello developer',
-        createdAt: new Date(),
-        user: {
-          _id: 2,
-          name: 'React Native',
-          avatar: 'https://placeimg.com/140/140/any',
-        },
-      },
-      {
-        _id: 2,
-        text: 'This is a system message',
-        createdAt: new Date(),
-        system: true,
-      },
-    ]);
+
+    // Create a Firestore query to fetch messages ordered by createdAt in descending order
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'messages'), orderBy('createdAt', 'desc')),
+      (snapshot) => {
+        // Map the fetched documents to a new array of messages
+        const newMessages = snapshot.docs.map((doc) => {
+          const messageData = doc.data();
+          return {
+            _id: doc.id,
+            text: messageData.text,
+            createdAt: new Date(messageData.createdAt.toMillis()),
+            user: {
+              _id: messageData.user._id,
+              name: messageData.user.name,
+            },
+          };
+        });
+        // Update the messages state with the new array of messages
+        setMessages(newMessages);
+      }
+    );
+
+    // Clean up the Firestore listener when the component unmounts
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
-  // Function to handle sending new messages
   const onSend = (newMessages) => {
-    setMessages((previousMessages) =>
-      GiftedChat.append(previousMessages, newMessages)
-    );
+    const message = newMessages[0];
+
+     // Add the new message to the Firestore collection
+    addDoc(collection(db, 'messages'), {
+      text: message.text,
+      createdAt: message.createdAt,
+      user: {
+        _id: id,
+        name: name,
+      },
+    });
   };
 
-  // Custom bubble styles
   const renderBubble = (props) => {
-    return <Bubble
-      {...props}
-      wrapperStyle={{
-        right: {
-          backgroundColor: "#000"
-        },
-        left: {
-          backgroundColor: "#FFF"
-        }
-      }}
-    />;
+    return (
+      <Bubble
+        {...props}
+        wrapperStyle={{
+          right: {
+            backgroundColor: '#000',
+          },
+          left: {
+            backgroundColor: '#FFF',
+          },
+        }}
+      />
+    );
   };
 
   return (
     <View style={[styles.container, { backgroundColor }]}>
-      {/* GiftedChat component */}
+      {/* Render the GiftedChat component */}
       <GiftedChat
-        messages={messages} // Feed the GiftedChat component messages from the messages state
-        renderBubble={renderBubble} // Apply custom styles to the chat bubbles
-        onSend={(messages) => onSend(messages)} // Handle sending new messages
+        messages={messages}
+        renderBubble={renderBubble}
+        onSend={(messages) => onSend(messages)}
         user={{
-          _id: 1,
-          name
-        }} // Set the user information
+          _id: id,
+          name: name,
+        }}
       />
-      {/* Keyboard behavior for Android */}
-      {Platform.OS === 'android' ? (
-        <KeyboardAvoidingView behavior="height" />
-      ) : null}
+      {/* Platform-specific keyboard behavior */}
+      {Platform.OS === 'android' ? <KeyboardAvoidingView behavior="height" /> : null}
     </View>
   );
 };
 
-// Styles for the Chat component
 const styles = StyleSheet.create({
   container: {
-    flex: 1
-  }
+    flex: 1,
+  },
 });
 
-export default Chat; // Exporting the Chat component as the default export
+export default Chat;
