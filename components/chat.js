@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Platform, KeyboardAvoidingView } from 'react-native';
+import { StyleSheet, View, Platform, KeyboardAvoidingView, Image } from 'react-native';
 import { Bubble, GiftedChat, InputToolbar } from 'react-native-gifted-chat';
 import { collection, query, orderBy, onSnapshot, addDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import CustomActions from './CustomActions';
+import MapView from 'react-native-maps';
 
 const Chat = ({ route, navigation, db, isConnected }) => {
   const { id, name, backgroundColor } = route.params;
@@ -27,13 +29,17 @@ const Chat = ({ route, navigation, db, isConnected }) => {
                 _id: messageData.user._id,
                 name: messageData.user.name,
               },
+              location: messageData.location ? {
+                latitude: messageData.location.latitude,
+                longitude: messageData.location.longitude,
+              } : null,
+              image: messageData.image ? messageData.image : null, // Add image property
             };
           });
           setMessages(newMessages);
           cacheMessages(newMessages); // Cache the messages when fetched
         }
       );
-
       return () => {
         unsubscribe();
       };
@@ -43,18 +49,22 @@ const Chat = ({ route, navigation, db, isConnected }) => {
   }, [isConnected]);
 
   const onSend = (newMessages) => {
-    const message = newMessages[0];
-
-     // Add the new message to the Firestore collection
-    addDoc(collection(db, 'messages'), {
-      text: message.text,
-      createdAt: message.createdAt,
-      user: {
-        _id: id,
-        name: name,
-      },
+    newMessages.forEach(async (message) => {
+      const { _id, text, createdAt, user, location, image } = message; // Include image in the message data
+      const messageData = { _id, createdAt, user };
+      if (text) {
+        messageData.text = text;
+      }
+      if (location) {
+        messageData.location = location;
+      }
+      if (image) {
+        messageData.image = image;
+      }
+      await addDoc(collection(db, "messages"), messageData);
     });
   };
+  
 
   const cacheMessages = async (messages) => {
     try {
@@ -99,13 +109,50 @@ const Chat = ({ route, navigation, db, isConnected }) => {
     }
   };
 
+  const renderCustomActions = (props) => {
+    return <CustomActions {...props} />;
+  };
+
+  const renderCustomView = (props) => {
+    const { currentMessage } = props;
+    if (currentMessage.location) {
+      return (
+        <MapView
+          style={{
+            width: 150,
+            height: 100,
+            borderRadius: 13,
+            margin: 3,
+          }}
+          region={{
+            latitude: currentMessage.location.latitude,
+            longitude: currentMessage.location.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+        />
+      );
+    } else if (currentMessage.image) { // Render image if it exists
+      return (
+        <Image
+          source={{ uri: currentMessage.image }}
+          style={{ width: 200, height: 200, borderRadius: 10 }}
+        />
+      );
+    }
+    return null;
+  };
+
   return (
     <View style={[styles.container, { backgroundColor }]}>
       <GiftedChat
         messages={messages}
         renderBubble={renderBubble}
         renderInputToolbar={renderInputToolbar} // Override renderInputToolbar prop
-        onSend={onSend}
+        onSend={messages => onSend(messages)}
+        renderActions={renderCustomActions}
+        renderCustomView={renderCustomView}
+        renderCustomActions={renderCustomActions}
         user={{
           _id: id,
           name: name,
