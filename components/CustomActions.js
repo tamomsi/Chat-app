@@ -9,12 +9,14 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 const CustomActions = ({ wrapperStyle, iconTextStyle, onSend, storage, userID }) => {
   const actionSheet = useActionSheet();
 
+  // Generate a unique reference string based on the image URI
   const generateReference = (uri) => {
     const timeStamp = (new Date()).getTime();
     const imageName = uri.split("/")[uri.split("/").length - 1];
     return `${userID}-${timeStamp}-${imageName}`;
   }
 
+  // Upload the selected image to Firebase storage and send the image URL
   const uploadAndSendImage = async (imageURI) => {
     const uniqueRefString = generateReference(imageURI);
     const newUploadRef = ref(getStorage(storage), uniqueRefString);
@@ -26,6 +28,7 @@ const CustomActions = ({ wrapperStyle, iconTextStyle, onSend, storage, userID })
     });
   }
 
+   // Pick an image from the device's library
   const pickImage = async () => {
     let permissions = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissions?.granted) {
@@ -35,6 +38,7 @@ const CustomActions = ({ wrapperStyle, iconTextStyle, onSend, storage, userID })
     }
   }
 
+  // Take a photo using the device's camera
   const takePhoto = async () => {
     let permissions = await ImagePicker.requestCameraPermissionsAsync();
     if (permissions?.granted) {
@@ -44,6 +48,8 @@ const CustomActions = ({ wrapperStyle, iconTextStyle, onSend, storage, userID })
     }
   };
 
+
+  // Handle the action button press
   const onActionPress = () => {
     const options = ['Choose From Library', 'Take Picture', 'Send Location', 'Cancel'];
     const cancelButtonIndex = options.length - 1;
@@ -68,6 +74,7 @@ const CustomActions = ({ wrapperStyle, iconTextStyle, onSend, storage, userID })
     );
   };
 
+  // Get the device's current location and send it as a message
   const getLocation = async () => {
     let permissions = await Location.requestForegroundPermissionsAsync();
     if (permissions?.granted) {
@@ -80,7 +87,7 @@ const CustomActions = ({ wrapperStyle, iconTextStyle, onSend, storage, userID })
             createdAt: new Date(),
             user: {
               _id: Math.round(Math.random() * 1000000),
-              name: "User name", // Replace with actual user name
+              name: "User name", 
             },
             location: {
               longitude: location.coords.longitude,

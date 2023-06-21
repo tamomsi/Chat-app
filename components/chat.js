@@ -19,6 +19,7 @@ const Chat = ({ route, navigation, db, isConnected }) => {
       const unsubscribe = onSnapshot(
         query(collection(db, 'messages'), orderBy('createdAt', 'desc')),
         (snapshot) => {
+          // Map the Firestore document data to the chat message format
           const newMessages = snapshot.docs.map((doc) => {
             const messageData = doc.data();
             return {
@@ -41,16 +42,16 @@ const Chat = ({ route, navigation, db, isConnected }) => {
         }
       );
       return () => {
-        unsubscribe();
+        unsubscribe(); // Unsubscribe from the Firestore snapshot listener
       };
     } else {
-      loadCachedMessages();
+      loadCachedMessages(); // Load cached messages if not connected
     }
   }, [isConnected]);
 
   const onSend = (newMessages) => {
     newMessages.forEach(async (message) => {
-      const { _id, text, createdAt, user, location, image } = message; // Include image in the message data
+      const { _id, text, createdAt, user, location, image } = message; // Destructure the message data
       const messageData = { _id, createdAt, user };
       if (text) {
         messageData.text = text;
@@ -61,14 +62,14 @@ const Chat = ({ route, navigation, db, isConnected }) => {
       if (image) {
         messageData.image = image;
       }
-      await addDoc(collection(db, "messages"), messageData);
+      await addDoc(collection(db, "messages"), messageData); // Add the message to Firestore collection
     });
   };
   
 
   const cacheMessages = async (messages) => {
     try {
-      await AsyncStorage.setItem('cachedMessages', JSON.stringify(messages));
+      await AsyncStorage.setItem('cachedMessages', JSON.stringify(messages)); // Cache the messages in AsyncStorage
     } catch (error) {
       console.log('Error caching messages:', error);
     }
@@ -76,7 +77,7 @@ const Chat = ({ route, navigation, db, isConnected }) => {
 
   const loadCachedMessages = async () => {
     try {
-      const cachedMessages = await AsyncStorage.getItem('cachedMessages');
+      const cachedMessages = await AsyncStorage.getItem('cachedMessages'); // Load cached messages from AsyncStorage
       if (cachedMessages) {
         setMessages(JSON.parse(cachedMessages));
       }
