@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Platform, KeyboardAvoidingView } from 'react-native';
+import { StyleSheet, View, Platform, KeyboardAvoidingView, Image } from 'react-native';
 import { Bubble, GiftedChat, InputToolbar } from 'react-native-gifted-chat';
 import { collection, query, orderBy, onSnapshot, addDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -33,6 +33,7 @@ const Chat = ({ route, navigation, db, isConnected }) => {
                 latitude: messageData.location.latitude,
                 longitude: messageData.location.longitude,
               } : null,
+              image: messageData.image ? messageData.image : null, // Add image property
             };
           });
           setMessages(newMessages);
@@ -49,16 +50,22 @@ const Chat = ({ route, navigation, db, isConnected }) => {
 
   const onSend = (newMessages) => {
     newMessages.forEach(async (message) => {
-      const { _id, text, createdAt, user, location } = message;
-      const messageData = { _id, text, createdAt, user };
+      const { _id, text, createdAt, user, location, image } = message; // Include image in the message data
+      const messageData = { _id, createdAt, user };
+      if (text) {
+        messageData.text = text;
+      }
       if (location) {
         messageData.location = location;
+      }
+      if (image) {
+        messageData.image = image;
       }
       await addDoc(collection(db, "messages"), messageData);
     });
   };
   
-  
+
   const cacheMessages = async (messages) => {
     try {
       await AsyncStorage.setItem('cachedMessages', JSON.stringify(messages));
@@ -107,25 +114,34 @@ const Chat = ({ route, navigation, db, isConnected }) => {
   };
 
   const renderCustomView = (props) => {
-    const { currentMessage} = props;
+    const { currentMessage } = props;
     if (currentMessage.location) {
       return (
-          <MapView
-            style={{width: 150,
-              height: 100,
-              borderRadius: 13,
-              margin: 3}}
-            region={{
-              latitude: currentMessage.location.latitude,
-              longitude: currentMessage.location.longitude,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421,
-            }}
-          />
+        <MapView
+          style={{
+            width: 150,
+            height: 100,
+            borderRadius: 13,
+            margin: 3,
+          }}
+          region={{
+            latitude: currentMessage.location.latitude,
+            longitude: currentMessage.location.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+        />
+      );
+    } else if (currentMessage.image) { // Render image if it exists
+      return (
+        <Image
+          source={{ uri: currentMessage.image }}
+          style={{ width: 200, height: 200, borderRadius: 10 }}
+        />
       );
     }
     return null;
-  }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor }]}>
@@ -136,6 +152,7 @@ const Chat = ({ route, navigation, db, isConnected }) => {
         onSend={messages => onSend(messages)}
         renderActions={renderCustomActions}
         renderCustomView={renderCustomView}
+        renderCustomActions={renderCustomActions}
         user={{
           _id: id,
           name: name,

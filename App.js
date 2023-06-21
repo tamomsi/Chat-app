@@ -5,6 +5,7 @@ import Start from './components/start';
 import Chat from './components/chat';
 import { initializeApp } from "firebase/app";
 import { getFirestore, disableNetwork, enableNetwork  } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // Importing necessary components from the React Navigation library
 import { NavigationContainer } from '@react-navigation/native';
@@ -26,9 +27,9 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
 // Initialize Cloud Firestore and get a reference to the service
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 const netInfo = useNetInfo();
 const isConnected = netInfo.isConnected;
@@ -45,7 +46,11 @@ return (
     <Stack.Navigator initialRouteName="Start">
       <Stack.Screen name="Start" component={Start} />
       <Stack.Screen name="Chat">
-        {props => <Chat db={db} isConnected={isConnected} {...props} />}
+        {props => <Chat 
+        db={db} 
+        storage={storage}
+        isConnected={isConnected} 
+        {...props} />}
       </Stack.Screen> 
     </Stack.Navigator>
   </NavigationContainer>
